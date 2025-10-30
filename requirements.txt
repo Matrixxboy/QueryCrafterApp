@@ -1,0 +1,6 @@
+PyQt6
+requests
+httpx
+mysql-connector-python
+psycopg2-binary
+google-generativeai
