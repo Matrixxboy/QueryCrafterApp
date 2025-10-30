@@ -1,7 +1,7 @@
 {
     "host": "localhost",
-    "user": "root",
     "port": "3306",
+    "user": "root",
     "password": "utsav1424",
     "database": "psybackend"
 }

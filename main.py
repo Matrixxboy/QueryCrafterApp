@@ -8,7 +8,8 @@ from PyQt6.QtWidgets import (
     QMessageBox, QHBoxLayout
 )
 from PyQt6.QtCore import Qt
-from Settings.Setting import SettingsPage
+from Settings.Setting import MainWindow as SettingsWindow
+from LLM.chatgpt import chat_with_gpt, get_llm_settings
 
 
 class QueryCrafterApp(QMainWindow):
@@ -48,11 +49,12 @@ class QueryCrafterApp(QMainWindow):
         btn_layout = QHBoxLayout()
         self.run_btn = QPushButton("▶️ Run Query")
         self.db_structure_btn = QPushButton("Show DB Structure")
+        self.generate_query_btn = QPushButton("Generate Query")
         self.clear_btn = QPushButton("🧹 Clear")
         self.settings_btn = QPushButton("⚙️ Settings")
         self.exit_btn = QPushButton("❌ Exit")
 
-        for btn in [self.run_btn, self.db_structure_btn, self.clear_btn, self.settings_btn, self.exit_btn]:
+        for btn in [self.run_btn, self.db_structure_btn, self.generate_query_btn, self.clear_btn, self.settings_btn, self.exit_btn]:
             btn.setStyleSheet("""
                 QPushButton {
                     background-color: #555;
@@ -65,6 +67,7 @@ class QueryCrafterApp(QMainWindow):
 
         btn_layout.addWidget(self.run_btn)
         btn_layout.addWidget(self.db_structure_btn)
+        btn_layout.addWidget(self.generate_query_btn)
         btn_layout.addWidget(self.clear_btn)
         btn_layout.addWidget(self.settings_btn)
         btn_layout.addWidget(self.exit_btn)
@@ -90,6 +93,7 @@ class QueryCrafterApp(QMainWindow):
         # --- Button Connections ---
         self.run_btn.clicked.connect(self.execute_query)
         self.db_structure_btn.clicked.connect(self.show_db_structure)
+        self.generate_query_btn.clicked.connect(self.generate_query)
         self.clear_btn.clicked.connect(self.clear_query)
         self.settings_btn.clicked.connect(self.open_settings)
         self.exit_btn.clicked.connect(self.close_app)
@@ -186,23 +190,55 @@ class QueryCrafterApp(QMainWindow):
             try:
                 with open(os.path.join(os.path.dirname(__file__), "SavedData/db_structure.json"), "w", encoding="utf-8") as f:
                     json.dump(all_table_structures, f, ensure_ascii=False, separators=(',', ':'))
-            except Exception as e:  
+            except Exception as e:
                     QMessageBox.information(self, "Error", f"⚠️ {e}")
             QMessageBox.information(self, "Success", "✅ Database structure loaded.")
 
         except mysql.connector.Error as err:
             QMessageBox.critical(self, "Error", f"⚠️ {err}")
-    # ------------------ Prompt Function ------------------
-    def prompt(self, question):
-        db_name = self.cursor.fetchone()[0]
-        with open(os.path.join(os.path.dirname(__file__), "../SavedData/db_structure.json"), "r", encoding="utf-8") as f:
-            data = json.load(f)
 
-        promt=f"""Youre are the professional SQL Builder
-        name of the datbase is {db_name}  
-        structure of the database is {data}
-        please make query as this {question} """
-        
+    # ------------------ Generate Query ------------------
+    def generate_query(self):
+        llm_settings = get_llm_settings()
+        if not llm_settings:
+            QMessageBox.warning(self, "LLM Settings Missing", "⚠️ LLM settings not found! Open Settings first.")
+            return
+
+        question = self.query_input.toPlainText().strip()
+        if not question:
+            QMessageBox.warning(self, "Empty Prompt", "⚠️ Please enter a prompt to generate a query.")
+            return
+
+        # Get DB structure
+        if not self.connection or not self.cursor:
+            QMessageBox.warning(self, "Not Connected", "⚠️ No active database connection.")
+            return
+        try:
+            self.cursor.execute("SELECT DATABASE()")
+            db_name = self.cursor.fetchone()[0]
+            with open(os.path.join(os.path.dirname(__file__), "SavedData/db_structure.json"), "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not read database structure: {e}")
+            return
+
+        prompt = f"""You are a professional SQL Builder.
+        The name of the database is {db_name}.
+        The structure of the database is {data}.
+        Please make a query for this: {question}"""
+
+        sql_query = chat_with_gpt(
+            prompt,
+            api_key=llm_settings.get("api_key"),
+            model=llm_settings.get("model"),
+            temperature=float(llm_settings.get("temperature", 0.2))
+        )
+
+        if sql_query.startswith("Error:"):
+            QMessageBox.critical(self, "LLM Error", sql_query)
+        else:
+            self.query_input.setPlainText(sql_query)
+
     # ------------------ Display Results ------------------
     def show_results(self, columns, rows):
         self.table.clear()
@@ -224,7 +260,7 @@ class QueryCrafterApp(QMainWindow):
         self.table.setColumnCount(0)
 
     def open_settings(self):
-        self.settings_window = SettingsPage()
+        self.settings_window = SettingsWindow()
         self.settings_window.show()
 
     def close_app(self):
