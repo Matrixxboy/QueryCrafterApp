@@ -1,59 +1,47 @@
 [
     {
-        "table_name": "questions",
+        "table_name": "interactions",
         "columns": [
             [
-                "answer",
-                "text"
-            ],
-            [
-                "answer_explanation",
-                "text"
-            ],
-            [
                 "id",
-                "int"
+                "bigint"
             ],
             [
-                "question",
+                "user_query",
                 "text"
             ],
             [
-                "question_type",
-                "varchar"
+                "answer",
+                "longtext"
+            ],
+            [
+                "context_snippet",
+                "longtext"
+            ],
+            [
+                "sources_json",
+                "longtext"
+            ],
+            [
+                "created_at",
+                "timestamp"
             ]
         ]
     },
     {
-        "table_name": "users",
+        "table_name": "knowledge_files",
         "columns": [
             [
-                "birth_date",
-                "varchar"
-            ],
-            [
-                "blood_group",
-                "varchar"
-            ],
-            [
-                "email",
-                "varchar"
-            ],
-            [
-                "gender",
-                "varchar"
-            ],
-            [
                 "id",
-                "int"
+                "bigint"
             ],
             [
-                "password_hash",
+                "file_path",
                 "varchar"
             ],
             [
-                "username",
-                "varchar"
+                "added_at",
+                "timestamp"
             ]
         ]
     }
