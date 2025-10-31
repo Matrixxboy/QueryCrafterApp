@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QueryCrafter - SQL Assistant</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f7f8fa;
+      color: #333;
+      font-family: "Inter", "Segoe UI", sans-serif;
+    }
+    h1 {
+      color: #4b6cb7;
+      font-weight: 600;
+    }
+    .navbar {
+      background-color: #eaf0f6;
+      border-bottom: 1px solid #d3dce6;
+    }
+    .navbar-brand {
+      color: #4b6cb7 !important;
+      font-weight: 600;
+    }
+    textarea {
+      background-color: #ffffff !important;
+      color: #333 !important;
+      border: 1px solid #cfd8e3;
+      border-radius: 0.6rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    textarea:focus {
+      border-color: #4b6cb7;
+      box-shadow: 0 0 0 3px rgba(75,108,183,0.15);
+    }
+    .btn {
+      border-radius: 0.5rem;
+      margin: 0.25rem;
+      font-weight: 500;
+    }
+    .btn-primary {
+      background-color: #4b6cb7;
+      border: none;
+    }
+    .btn-primary:hover {
+      background-color: #3c5aa6;
+    }
+    .table {
+      background-color: #fff;
+      border-radius: 0.5rem;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    #loader {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1050;
+    }
+    .bouncing-loader {
+      display: flex;
+      justify-content: center;
+    }
+    .bouncing-loader > div {
+      width: 1rem;
+      height: 1rem;
+      margin: 3px 6px;
+      border-radius: 50%;
+      background-color: #4b6cb7;
+      opacity: 1;
+      animation: bouncing-loader 0.6s infinite alternate;
+    }
+    @keyframes bouncing-loader {
+      to {
+        opacity: 0.1;
+        transform: translateY(-16px);
+      }
+    }
+    .bouncing-loader > div:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    .bouncing-loader > div:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-light shadow-sm px-3">
+    <a class="navbar-brand" href="#"><i class="bi bi-brain-fill"></i> QueryCrafter</a>
+    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#helpModal"><i class="bi bi-question-circle-fill"></i> Help & Guide</button>
+  </nav>
+
+  <!-- Help Modal -->
+  <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="helpModalLabel">Help & Guide</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <h6>Welcome to QueryCrafter!</h6>
+          <p>This tool helps you interact with your database using natural language.</p>
+          <hr>
+          <h6>Actions:</h6>
+          <ul>
+            <li><b>Run Query:</b> Executes the SQL query in the text area.</li>
+            <li><b>Generate Query:</b> Generates an SQL query from your natural language input.</li>
+            <li><b>Show DB Structure:</b> Displays the structure of the connected database.</li>
+            <li><b>Clear:</b> Clears the text area and the results table.</li>
+            <li><b>Export to CSV:</b> Exports the current results to a CSV file.</li>
+            <li><b>Exit:</b> Closes the application.</li>
+          </ul>
+          <hr>
+          <h6>Tips:</h6>
+          <ul>
+            <li>For generating queries, be as specific as possible in your natural language input.</li>
+            <li>You can edit the generated SQL before running it.</li>
+            <li>The database connection settings are configured in the <code>.env</code> file.</li>
+          </ul>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loader -->
+  <div id="loader" class="bouncing-loader" style="display: none;">
+    <div></div>
+    <div></div>
+    <div></div>
+  </div>
+
+  <!-- Toasts -->
+  <div class="toast-container position-fixed top-0 end-0 p-3">
+    <div id="success-toast" class="toast align-items-center text-white bg-success border-0" role="alert">
+      <div class="d-flex">
+        <div class="toast-body"></div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+    <div id="error-toast" class.="toast align-items-center text-white bg-danger border-0" role="alert">
+      <div class="d-flex">
+        <div class="toast-body"></div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container py-5">
+    <div class="text-center mb-4">
+      <h1><i class="bi bi-brain-fill"></i> QueryCrafter - SQL Assistant</h1>
+      <p class="text-muted">Generate and run SQL queries from natural language in one click.</p>
+    </div>
+
+    <div class="mb-3">
+      <textarea id="query-input" class="form-control" rows="5" placeholder="Write a natural language query or paste SQL here..."></textarea>
+    </div>
+
+    <div class="text-center mb-4">
+      <button class="btn btn-primary" onclick="handleAction('run_query')"><i class="bi bi-play-fill"></i> Run Query</button>
+      <button class="btn btn-outline-primary" onclick="handleAction('generate_query')"><i class="bi bi-magic"></i> Generate Query</button>
+      <button class="btn btn-outline-secondary" onclick="handleAction('show_db_structure')"><i class="bi bi-bar-chart-fill"></i> DB Structure</button>
+      <button class="btn btn-outline-warning" onclick="handleAction('clear')"><i class="bi bi-brush-fill"></i> Clear</button>
+      <button class="btn btn-outline-success" onclick="handleAction('export_csv')"><i class="bi bi-file-earmark-text-fill"></i> Export CSV</button>
+      <button class="btn btn-outline-danger" onclick="handleAction('exit')"><i class="bi bi-x-circle-fill"></i> Exit</button>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-bordered" id="results-table">
+        <thead class="table-light"></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const loader = document.getElementById('loader');
+    const successToast = new bootstrap.Toast(document.getElementById('success-toast'));
+    const errorToast = new bootstrap.Toast(document.getElementById('error-toast'));
+
+    function showLoader() { loader.style.display = 'flex'; }
+    function hideLoader() { loader.style.display = 'none'; }
+
+    function showSuccess(message) {
+      document.querySelector('#success-toast .toast-body').textContent = message;
+      successToast.show();
+    }
+    function showError(message) {
+      document.querySelector('#error-toast .toast-body').textContent = message;
+      errorToast.show();
+    }
+
+    function handleAction(action) {
+      const queryInput = document.getElementById('query-input');
+      const table = document.getElementById('results-table');
+      const thead = table.querySelector('thead');
+      const tbody = table.querySelector('tbody');
+
+      let formData = new FormData();
+      formData.append('action', action);
+      if (action === 'run_query') formData.append('query', queryInput.value);
+      else if (action === 'generate_query') formData.append('question', queryInput.value);
+
+      if (action === 'clear') {
+        queryInput.value = '';
+        thead.innerHTML = '';
+        tbody.innerHTML = '';
+        return;
+      }
+      if (action === 'exit') {
+        if (confirm('Exit QueryCrafter?')) window.location.href = 'about:blank';
+        return;
+      }
+
+      showLoader();
+      fetch('/api', { method: 'POST', body: formData })
+        .then(response => response.ok ? response.json() : Promise.reject('Server error'))
+        .then(data => {
+          hideLoader();
+          thead.innerHTML = ''; tbody.innerHTML = '';
+
+          if (data.error) showError(data.error);
+          else if (data.message) showSuccess(data.message);
+          else if (data.query) queryInput.value = data.query;
+          else if (data.columns && data.rows) {
+            const headerRow = document.createElement('tr');
+            data.columns.forEach(col => {
+              const th = document.createElement('th');
+              th.textContent = col;
+              headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            data.rows.forEach(row => {
+              const tr = document.createElement('tr');
+              row.forEach(cell => {
+                const td = document.createElement('td');
+                td.textContent = cell;
+                tr.appendChild(td);
+              });
+              tbody.appendChild(tr);
+            });
+          } else if (data.structure) {
+            const headerRow = document.createElement('tr');
+            ['Table Name', 'Column Name', 'Data Type'].forEach(col => {
+              const th = document.createElement('th');
+              th.textContent = col;
+              headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            data.structure.forEach(table => {
+              table.columns.forEach((col, i) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                  <td>${i === 0 ? table.table_name : ''}</td>
+                  <td>${col[0]}</td>
+                  <td>${col[1]}</td>`;
+                tbody.appendChild(tr);
+              });
+            });
+          }
+        })
+        .catch(err => {
+          hideLoader();
+          showError('Server not responding. Please try again.');
+        });
+    }
+  </script>
+</body>
+</html>

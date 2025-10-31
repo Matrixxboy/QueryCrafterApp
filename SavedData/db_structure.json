@@ -1,1 +1,60 @@
-[["questions",[["id","int"],["question","text"],["question_type","varchar"],["answer","text"],["answer_explanation","text"]]],["users",[["id","int"],["username","varchar"],["email","varchar"],["password_hash","varchar"],["blood_group","varchar"],["birth_date","varchar"],["gender","varchar"]]]]
+[
+    {
+        "table_name": "questions",
+        "columns": [
+            [
+                "answer",
+                "text"
+            ],
+            [
+                "answer_explanation",
+                "text"
+            ],
+            [
+                "id",
+                "int"
+            ],
+            [
+                "question",
+                "text"
+            ],
+            [
+                "question_type",
+                "varchar"
+            ]
+        ]
+    },
+    {
+        "table_name": "users",
+        "columns": [
+            [
+                "birth_date",
+                "varchar"
+            ],
+            [
+                "blood_group",
+                "varchar"
+            ],
+            [
+                "email",
+                "varchar"
+            ],
+            [
+                "gender",
+                "varchar"
+            ],
+            [
+                "id",
+                "int"
+            ],
+            [
+                "password_hash",
+                "varchar"
+            ],
+            [
+                "username",
+                "varchar"
+            ]
+        ]
+    }
+]
