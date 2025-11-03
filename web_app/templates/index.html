@@ -233,6 +233,52 @@
         if (confirm('Exit QueryCrafter?')) window.location.href = 'about:blank';
         return;
       }
+      if (action === 'export_csv') {
+        const headers = Array.from(thead.querySelectorAll('th')).map(th => th.textContent);
+        const rows = Array.from(tbody.querySelectorAll('tr')).map(tr => 
+          Array.from(tr.querySelectorAll('td')).map(td => td.textContent)
+        );
+
+        if (rows.length === 0) {
+          showError('No data to export.');
+          return;
+        }
+
+        const data = rows.map(row => {
+          let rowData = {};
+          headers.forEach((header, i) => {
+            rowData[header] = row[i];
+          });
+          return rowData;
+        });
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/api';
+
+        const actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'action';
+        actionInput.value = 'export_csv';
+        form.appendChild(actionInput);
+
+        const dataInput = document.createElement('input');
+        dataInput.type = 'hidden';
+        dataInput.name = 'data';
+        dataInput.value = JSON.stringify(data);
+        form.appendChild(dataInput);
+
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+        
+        return;
+      }
+
+      let formData = new FormData();
+      formData.append('action', action);
+      if (action === 'run_query') formData.append('query', queryInput.value);
+      else if (action === 'generate_query') formData.append('question', queryInput.value);
 
       showLoader();
       
