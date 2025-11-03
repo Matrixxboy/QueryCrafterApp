@@ -1,3 +1,7 @@
 Flask
 python-dotenv
 pandas
+mysql-connector-python
+openai
+dotenv
+requests

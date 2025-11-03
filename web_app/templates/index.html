@@ -210,8 +210,18 @@
 
       let formData = new FormData();
       formData.append('action', action);
-      if (action === 'run_query') formData.append('query', queryInput.value);
-      else if (action === 'generate_query') formData.append('question', queryInput.value);
+      if (action === 'run_query') {
+        formData.append('query', queryInput.value);
+      } else if (action === 'generate_query') {
+        formData.append('question', queryInput.value);
+      } else if (action === 'export_csv') {
+        const headers = Array.from(thead.querySelectorAll('th')).map(th => th.textContent);
+        const rows = Array.from(tbody.querySelectorAll('tr')).map(tr => 
+          Array.from(tr.querySelectorAll('td')).map(td => td.textContent)
+        );
+        const data = rows.map(row => Object.fromEntries(headers.map((h, i) => [h, row[i]])));
+        formData.append('data', JSON.stringify(data));
+      }
 
       if (action === 'clear') {
         queryInput.value = '';
@@ -225,11 +235,40 @@
       }
 
       showLoader();
+      
+      if (action === 'export_csv') {
+        fetch('/api', { method: 'POST', body: formData })
+          .then(response => {
+            if (response.ok) return response.blob();
+            return response.json().then(err => Promise.reject(err.error));
+          })
+          .then(blob => {
+            hideLoader();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = 'exported_data.csv';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            showSuccess('Data exported successfully!');
+          })
+          .catch(err => {
+            hideLoader();
+            showError(err || 'Failed to export CSV.');
+          });
+        return;
+      }
+
       fetch('/api', { method: 'POST', body: formData })
         .then(response => response.ok ? response.json() : Promise.reject('Server error'))
         .then(data => {
           hideLoader();
-          thead.innerHTML = ''; tbody.innerHTML = '';
+          if (action !== 'generate_query') {
+            thead.innerHTML = ''; 
+            tbody.innerHTML = '';
+          }
 
           if (data.error) showError(data.error);
           else if (data.message) showSuccess(data.message);
