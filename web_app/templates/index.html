@@ -155,11 +155,16 @@
 
     <!-- Right Results Panel -->
     <div class="right-panel">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="mb-0"><i class="bi bi-table"></i> Query Results</h4>
-        <button class="btn btn-outline-success btn-sm" onclick="downloadCSV()">
-          <i class="bi bi-file-earmark-arrow-down"></i> Download CSV
-        </button>
+      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+        <h4 class="mb-2"><i class="bi bi-table"></i> Query Results</h4>
+        <div>
+          <button class="btn btn-outline-info btn-sm" onclick="showDBStructure()">
+            <i class="bi bi-diagram-3"></i> Show DB Structure
+          </button>
+          <button class="btn btn-outline-success btn-sm" onclick="downloadCSV()">
+            <i class="bi bi-file-earmark-arrow-down"></i> Download CSV
+          </button>
+        </div>
       </div>
       <div class="table-responsive">
         <table class="table table-bordered" id="results-table">
@@ -225,29 +230,7 @@
         hideLoader();
         if (execData.error) return showError(execData.error);
 
-        // Step 3: Display results
-        thead.innerHTML = "";
-        tbody.innerHTML = "";
-        if (execData.columns && execData.rows) {
-          const headerRow = document.createElement("tr");
-          execData.columns.forEach(col => {
-            const th = document.createElement("th");
-            th.textContent = col;
-            headerRow.appendChild(th);
-          });
-          thead.appendChild(headerRow);
-          execData.rows.forEach(row => {
-            const tr = document.createElement("tr");
-            row.forEach(cell => {
-              const td = document.createElement("td");
-              td.textContent = cell;
-              tr.appendChild(td);
-            });
-            tbody.appendChild(tr);
-          });
-        }
-
-        // Step 4: Save to history
+        renderTable(execData);
         const entry = { question, query: sqlQuery, timestamp: new Date().toLocaleTimeString() };
         queryHistory.unshift(entry);
         renderHistory();
@@ -256,6 +239,95 @@
         hideLoader();
         showError("Something went wrong. Please try again.");
       }
+    }
+
+    // Renders results or structure into table
+    function renderTable(data) {
+      thead.innerHTML = "";
+      tbody.innerHTML = "";
+
+      if (data.columns && data.rows) {
+        const headerRow = document.createElement("tr");
+        data.columns.forEach(col => {
+          const th = document.createElement("th");
+          th.textContent = col;
+          headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+
+        data.rows.forEach(row => {
+          const tr = document.createElement("tr");
+          row.forEach(cell => {
+            const td = document.createElement("td");
+            td.textContent = cell;
+            tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
+        });
+      } else if (data.structure) {
+        const headerRow = document.createElement("tr");
+        ["Table Name", "Column Name", "Data Type"].forEach(col => {
+          const th = document.createElement("th");
+          th.textContent = col;
+          headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+
+        data.structure.forEach(table => {
+          table.columns.forEach((col, i) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${i === 0 ? table.table_name : ""}</td>
+              <td>${col[0]}</td>
+              <td>${col[1]}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        });
+      }
+    }
+
+    // Show DB structure
+    async function showDBStructure() {
+      showLoader();
+      try {
+        const formData = new FormData();
+        formData.append("action", "show_db_structure");
+        const response = await fetch("/api", { method: "POST", body: formData });
+        const data = await response.json();
+        hideLoader();
+
+        if (data.error) return showError(data.error);
+        renderTable(data);
+        showSuccess("Database structure loaded!");
+      } catch (err) {
+        hideLoader();
+        showError("Failed to load database structure.");
+      }
+    }
+
+    // CSV Export
+    function downloadCSV() {
+      const rows = [];
+      const headers = Array.from(thead.querySelectorAll('th')).map(th => th.textContent);
+      if (headers.length === 0) return showError("No table data available to download.");
+
+      rows.push(headers.join(","));
+      Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
+        const cols = Array.from(tr.querySelectorAll('td')).map(td => `"${td.textContent.replace(/"/g, '""')}"`);
+        rows.push(cols.join(","));
+      });
+
+      const csvContent = rows.join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `query_results_${new Date().toISOString().slice(0,19).replace(/:/g, "-")}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showSuccess("CSV file downloaded successfully!");
     }
 
     function renderHistory() {
@@ -277,32 +349,6 @@
         };
         historyContainer.appendChild(div);
       });
-    }
-
-    // ✅ CSV Export Function
-    function downloadCSV() {
-      const rows = [];
-      const headers = Array.from(thead.querySelectorAll('th')).map(th => th.textContent);
-      if (headers.length === 0) return showError("No table data available to download.");
-
-      rows.push(headers.join(","));
-      Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
-        const cols = Array.from(tr.querySelectorAll('td')).map(td => `"${td.textContent.replace(/"/g, '""')}"`);
-        rows.push(cols.join(","));
-      });
-
-      const csvContent = rows.join("\n");
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "query_results.csv";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-
-      showSuccess("CSV file downloaded successfully!");
     }
   </script>
 </body>
