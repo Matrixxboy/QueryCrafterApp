@@ -1,29 +1,70 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>QueryCrafter - SQL Assistant</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
   <style>
     body {
       background-color: #f7f8fa;
       color: #333;
       font-family: "Inter", "Segoe UI", sans-serif;
     }
-    h1 {
-      color: #4b6cb7;
-      font-weight: 600;
-    }
+    h1 { color: #4b6cb7; font-weight: 600; }
     .navbar {
       background-color: #eaf0f6;
       border-bottom: 1px solid #d3dce6;
     }
-    .navbar-brand {
-      color: #4b6cb7 !important;
-      font-weight: 600;
+    .navbar-brand { color: #4b6cb7 !important; font-weight: 600; }
+
+    /* Layout */
+    .main-container {
+      display: flex;
+      height: calc(100vh - 60px);
+      overflow: hidden;
     }
+    .left-panel {
+      width: 35%;
+      border-right: 1px solid #d3dce6;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      background: #fff;
+    }
+    .right-panel {
+      width: 65%;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .query-item {
+      border-bottom: 1px solid #e0e6ed;
+      padding: 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .query-item:hover {
+      background: #f5f7fa;
+    }
+    .query-item.active {
+      background: #eef3fc;
+      border-left: 4px solid #4b6cb7;
+    }
+    .query-item small {
+      display: block;
+      color: #666;
+    }
+    .query-body {
+      display: none;
+      padding: 8px;
+      background: #fafafa;
+      border-radius: 6px;
+      margin-top: 5px;
+      font-family: monospace;
+      white-space: pre-wrap;
+    }
+
     textarea {
       background-color: #ffffff !important;
       color: #333 !important;
@@ -31,50 +72,35 @@
       border-radius: 0.6rem;
       box-shadow: 0 2px 6px rgba(0,0,0,0.05);
     }
-    textarea:focus {
-      border-color: #4b6cb7;
-      box-shadow: 0 0 0 3px rgba(75,108,183,0.15);
-    }
+
     .btn {
       border-radius: 0.5rem;
       margin: 0.25rem;
       font-weight: 500;
     }
-    .btn-primary {
-      background-color: #4b6cb7;
-      border: none;
-    }
-    .btn-primary:hover {
-      background-color: #3c5aa6;
-    }
+    .btn-primary { background-color: #4b6cb7; border: none; }
+    .btn-primary:hover { background-color: #3c5aa6; }
+
     .table {
       background-color: #fff;
       border-radius: 0.5rem;
-      overflow: hidden;
       box-shadow: 0 2px 10px rgba(0,0,0,0.05);
     }
+
     #loader-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
       background-color: rgba(0, 0, 0, 0.5);
       backdrop-filter: blur(5px);
-      z-index: 1040;
-      display: none;
+      z-index: 1040; display: none;
     }
     #loader {
-      position: fixed;
-      top: 50%;
-      left: 50%;
+      position: fixed; top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       z-index: 1050;
     }
     .spinner-border {
-      width: 3rem;
-      height: 3rem;
-      color: #4b6cb7;
+      width: 3rem; height: 3rem; color: #4b6cb7;
     }
   </style>
 </head>
@@ -82,44 +108,7 @@
   <!-- Navbar -->
   <nav class="navbar navbar-light shadow-sm px-3">
     <a class="navbar-brand" href="#"><i class="bi bi-brain-fill"></i> QueryCrafter</a>
-    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#helpModal"><i class="bi bi-question-circle-fill"></i> Help & Guide</button>
   </nav>
-
-  <!-- Help Modal -->
-  <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="helpModalLabel">Help & Guide</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <h6>Welcome to QueryCrafter!</h6>
-          <p>This tool helps you interact with your database using natural language.</p>
-          <hr>
-          <h6>Actions:</h6>
-          <ul>
-            <li><b>Run Query:</b> Executes the SQL query in the text area.</li>
-            <li><b>Generate Query:</b> Generates an SQL query from your natural language input.</li>
-            <li><b>Show DB Structure:</b> Displays the structure of the connected database.</li>
-            <li><b>Clear:</b> Clears the text area and the results table.</li>
-            <li><b>Export to CSV:</b> Exports the current results to a CSV file.</li>
-            <li><b>Exit:</b> Closes the application.</li>
-          </ul>
-          <hr>
-          <h6>Tips:</h6>
-          <ul>
-            <li>For generating queries, be as specific as possible in your natural language input.</li>
-            <li>You can edit the generated SQL before running it.</li>
-            <li>The database connection settings are configured in the <code>.env</code> file.</li>
-          </ul>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- Loader -->
   <div id="loader-overlay"></div>
@@ -132,48 +121,52 @@
   <!-- Toasts -->
   <div class="toast-container position-fixed top-0 end-0 p-3">
     <div id="success-toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="toast-header bg-success text-white">
-            <i class="bi bi-check-circle-fill me-2"></i>
-            <strong class="me-auto">Success</strong>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-        <div class="toast-body"></div>
+      <div class="toast-header bg-success text-white">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        <strong class="me-auto">Success</strong>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body"></div>
     </div>
     <div id="error-toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="toast-header bg-danger text-white">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-            <strong class="me-auto">Error</strong>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-        <div class="toast-body"></div>
+      <div class="toast-header bg-danger text-white">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <strong class="me-auto">Error</strong>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body"></div>
     </div>
   </div>
 
   <!-- Main Content -->
-  <div class="container py-5">
-    <div class="text-center mb-4">
-      <h1><i class="bi bi-brain-fill"></i> QueryCrafter - SQL Assistant</h1>
-      <p class="text-muted">Generate and run SQL queries from natural language in one click.</p>
+  <div class="main-container">
+    <!-- Left Chat Panel -->
+    <div class="left-panel">
+      <div class="p-3 border-bottom">
+        <textarea id="query-input" class="form-control mb-3" rows="3" placeholder="Ask or write your SQL query..."></textarea>
+        <div class="d-flex justify-content-center">
+          <button class="btn btn-primary" onclick="handleAction('generate_query')"><i class="bi bi-magic"></i> Generate & Run</button>
+        </div>
+      </div>
+      <div id="query-history" class="flex-grow-1 overflow-auto">
+        <!-- Query history will appear here -->
+      </div>
     </div>
 
-    <div class="mb-3">
-      <textarea id="query-input" class="form-control" rows="5" placeholder="Write a natural language query or paste SQL here..."></textarea>
-    </div>
-
-    <div class="text-center mb-4">
-      <button class="btn btn-primary" onclick="handleAction('run_query')"><i class="bi bi-play-fill"></i> Run Query</button>
-      <button class="btn btn-outline-primary" onclick="handleAction('generate_query')"><i class="bi bi-magic"></i> Generate Query</button>
-      <button class="btn btn-outline-secondary" onclick="handleAction('show_db_structure')"><i class="bi bi-bar-chart-fill"></i> DB Structure</button>
-      <button class="btn btn-outline-warning" onclick="handleAction('clear')"><i class="bi bi-brush-fill"></i> Clear</button>
-      <button class="btn btn-outline-success" onclick="handleAction('export_csv')"><i class="bi bi-file-earmark-text-fill"></i> Export CSV</button>
-      <button class="btn btn-outline-danger" onclick="handleAction('exit')"><i class="bi bi-x-circle-fill"></i> Exit</button>
-    </div>
-
-    <div class="table-responsive">
-      <table class="table table-bordered" id="results-table">
-        <thead class="table-light"></thead>
-        <tbody></tbody>
-      </table>
+    <!-- Right Results Panel -->
+    <div class="right-panel">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0"><i class="bi bi-table"></i> Query Results</h4>
+        <button class="btn btn-outline-success btn-sm" onclick="downloadCSV()">
+          <i class="bi bi-file-earmark-arrow-down"></i> Download CSV
+        </button>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-bordered" id="results-table">
+          <thead class="table-light"></thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -184,14 +177,14 @@
     const successToast = new bootstrap.Toast(document.getElementById('success-toast'));
     const errorToast = new bootstrap.Toast(document.getElementById('error-toast'));
 
-    function showLoader() { 
-      loader.style.display = 'block';
-      loaderOverlay.style.display = 'block';
-    }
-    function hideLoader() { 
-      loader.style.display = 'none'; 
-      loaderOverlay.style.display = 'none';
-    }
+    const historyContainer = document.getElementById('query-history');
+    const queryInput = document.getElementById('query-input');
+    const thead = document.querySelector('#results-table thead');
+    const tbody = document.querySelector('#results-table tbody');
+    let queryHistory = [];
+
+    function showLoader() { loader.style.display = 'block'; loaderOverlay.style.display = 'block'; }
+    function hideLoader() { loader.style.display = 'none'; loaderOverlay.style.display = 'none'; }
 
     function showSuccess(message) {
       document.querySelector('#success-toast .toast-body').textContent = message;
@@ -202,120 +195,114 @@
       errorToast.show();
     }
 
-    function handleAction(action) {
-      const queryInput = document.getElementById('query-input');
-      const table = document.getElementById('results-table');
-      const thead = table.querySelector('thead');
-      const tbody = table.querySelector('tbody');
-
-      if (action === 'clear') {
-        queryInput.value = '';
-        thead.innerHTML = '';
-        tbody.innerHTML = '';
-        return;
-      }
-      if (action === 'exit') {
-        if (confirm('Exit QueryCrafter?')) window.location.href = 'about:blank';
-        return;
-      }
-      if (action === 'export_csv') {
-        const headers = Array.from(thead.querySelectorAll('th')).map(th => th.textContent);
-        const rows = Array.from(tbody.querySelectorAll('tr')).map(tr => 
-          Array.from(tr.querySelectorAll('td')).map(td => td.textContent)
-        );
-
-        if (rows.length === 0) {
-          showError('No data to export.');
-          return;
-        }
-
-        const data = rows.map(row => {
-          let rowData = {};
-          headers.forEach((header, i) => {
-            rowData[header] = row[i];
-          });
-          return rowData;
-        });
-
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '/api';
-
-        const actionInput = document.createElement('input');
-        actionInput.type = 'hidden';
-        actionInput.name = 'action';
-        actionInput.value = 'export_csv';
-        form.appendChild(actionInput);
-
-        const dataInput = document.createElement('input');
-        dataInput.type = 'hidden';
-        dataInput.name = 'data';
-        dataInput.value = JSON.stringify(data);
-        form.appendChild(dataInput);
-
-        document.body.appendChild(form);
-        form.submit();
-        document.body.removeChild(form);
-        
-        return;
-      }
-
-      let formData = new FormData();
-      formData.append('action', action);
-      if (action === 'run_query') formData.append('query', queryInput.value);
-      else if (action === 'generate_query') formData.append('question', queryInput.value);
+    async function handleAction(action) {
+      const question = queryInput.value.trim();
+      if (!question) return showError("Please enter a question or query.");
 
       showLoader();
-      fetch('/api', { method: 'POST', body: formData })
-        .then(response => response.ok ? response.json() : Promise.reject('Server error'))
-        .then(data => {
-          hideLoader();
-          thead.innerHTML = ''; tbody.innerHTML = '';
 
-          if (data.error) showError(data.error);
-          else if (data.message) showSuccess(data.message);
-          else if (data.query) queryInput.value = data.query;
-          else if (data.columns && data.rows) {
-            const headerRow = document.createElement('tr');
-            data.columns.forEach(col => {
-              const th = document.createElement('th');
-              th.textContent = col;
-              headerRow.appendChild(th);
+      try {
+        // Step 1: Generate Query
+        const formData = new FormData();
+        formData.append("action", "generate_query");
+        formData.append("question", question);
+
+        const genRes = await fetch("/api", { method: "POST", body: formData });
+        const genData = await genRes.json();
+
+        if (!genData.query) throw new Error("Failed to generate query.");
+
+        const sqlQuery = genData.query;
+
+        // Step 2: Execute Query
+        const runData = new FormData();
+        runData.append("action", "run_query");
+        runData.append("query", sqlQuery);
+
+        const execRes = await fetch("/api", { method: "POST", body: runData });
+        const execData = await execRes.json();
+
+        hideLoader();
+        if (execData.error) return showError(execData.error);
+
+        // Step 3: Display results
+        thead.innerHTML = "";
+        tbody.innerHTML = "";
+        if (execData.columns && execData.rows) {
+          const headerRow = document.createElement("tr");
+          execData.columns.forEach(col => {
+            const th = document.createElement("th");
+            th.textContent = col;
+            headerRow.appendChild(th);
+          });
+          thead.appendChild(headerRow);
+          execData.rows.forEach(row => {
+            const tr = document.createElement("tr");
+            row.forEach(cell => {
+              const td = document.createElement("td");
+              td.textContent = cell;
+              tr.appendChild(td);
             });
-            thead.appendChild(headerRow);
-            data.rows.forEach(row => {
-              const tr = document.createElement('tr');
-              row.forEach(cell => {
-                const td = document.createElement('td');
-                td.textContent = cell;
-                tr.appendChild(td);
-              });
-              tbody.appendChild(tr);
-            });
-          } else if (data.structure) {
-            const headerRow = document.createElement('tr');
-            ['Table Name', 'Column Name', 'Data Type'].forEach(col => {
-              const th = document.createElement('th');
-              th.textContent = col;
-              headerRow.appendChild(th);
-            });
-            thead.appendChild(headerRow);
-            data.structure.forEach(table => {
-              table.columns.forEach((col, i) => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                  <td>${i === 0 ? table.table_name : ''}</td>
-                  <td>${col[0]}</td>
-                  <td>${col[1]}</td>`;
-                tbody.appendChild(tr);
-              });
-            });
-          }
-        })
-        .catch(err => {
-          hideLoader();
-          showError('Server not responding. Please try again.');
-        });
+            tbody.appendChild(tr);
+          });
+        }
+
+        // Step 4: Save to history
+        const entry = { question, query: sqlQuery, timestamp: new Date().toLocaleTimeString() };
+        queryHistory.unshift(entry);
+        renderHistory();
+        showSuccess("Query generated and executed successfully!");
+      } catch (err) {
+        hideLoader();
+        showError("Something went wrong. Please try again.");
+      }
+    }
+
+    function renderHistory() {
+      historyContainer.innerHTML = "";
+      queryHistory.forEach((q) => {
+        const div = document.createElement("div");
+        div.classList.add("query-item");
+        div.innerHTML = `
+          <strong>${q.question}</strong>
+          <small>${q.timestamp}</small>
+          <div class="query-body">${q.query}</div>
+        `;
+        div.onclick = () => {
+          document.querySelectorAll(".query-item").forEach(item => item.classList.remove("active"));
+          div.classList.toggle("active");
+          const body = div.querySelector(".query-body");
+          body.style.display = body.style.display === "block" ? "none" : "block";
+          queryInput.value = q.query;
+        };
+        historyContainer.appendChild(div);
+      });
+    }
+
+    // ✅ CSV Export Function
+    function downloadCSV() {
+      const rows = [];
+      const headers = Array.from(thead.querySelectorAll('th')).map(th => th.textContent);
+      if (headers.length === 0) return showError("No table data available to download.");
+
+      rows.push(headers.join(","));
+      Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
+        const cols = Array.from(tr.querySelectorAll('td')).map(td => `"${td.textContent.replace(/"/g, '""')}"`);
+        rows.push(cols.join(","));
+      });
+
+      const csvContent = rows.join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "query_results.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      showSuccess("CSV file downloaded successfully!");
     }
   </script>
 </body>
